@@ -40,8 +40,8 @@ dt = aoi.transforms.datatransform(1, # number of classes
                                   poisson_noise=[30, 45],
                                   blur=False,
                                   contrast=True,
-                                  zoom=True,
-                                  resize=[2, 1], # downsize all the images by a factor of 2
+                                  zoom=False,
+                                  #resize=[2, 1], # downsize all the images by a factor of 2
                                   seed=1)
 def augmented_simulations(cropped_image_list,cropped_mask_list):
     X_train, y_train = dt.run(np.array(cropped_image_list), np.array(cropped_mask_list)[..., None])
@@ -454,13 +454,18 @@ def plot_training_loss(training_loss,task,scaler_flag,feature_extractor,training
     plt.savefig(f"/lustre/saranath/Techcon24/AIMD/Sim2Experiment/results/single_tasks/training_loss/Training_loss_Task{task}_Norm{scaler_flag}_{feature_extractor}_training{training_cycles}_lr{lr}_.png")
     plt.clf()
 
+
+def decimal_formatter_mod(x, pos):
+    """ Format ticks to 2 decimal places. """
+    return f'{x/1e-3:.4f}'
+
 # @title Modified plotting functions
 def mod_reconstruction_graph_plot(
     iterations_train, train_mean, y_train,
     iterations_test, mean, y_test,
     ind_to_val, title, task,
     scaler_flag, feature_extractor,
-    training_cycles, lr
+    training_cycles, lr, augmentation
 ):
     plt.figure(figsize=(20, 10))
 
@@ -485,7 +490,7 @@ def mod_reconstruction_graph_plot(
     # Titles and labels with enhanced styles
     #plt.title(f"{title} from Task {task}", fontsize=22, fontweight='bold', color='darkgreen')
     plt.xlabel("Iterations (fs)", fontsize=16, fontweight='bold')
-    plt.ylabel("Target energy difference per atom (eV)", fontsize=16, fontweight='bold')
+    plt.ylabel("Target energy difference per atom (meV)", fontsize=16, fontweight='bold')
 
     # Customize ticks
     plt.xticks(fontsize=14, fontweight='bold')
@@ -500,26 +505,33 @@ def mod_reconstruction_graph_plot(
     # Add background color
     #plt.gca().set_facecolor('lightgray')
     plt.gca().set_facecolor('white')
+    #plt.gca().xaxis.set_major_formatter(FuncFormatter(decimal_formatter_mod))
+    plt.gca().yaxis.set_major_formatter(FuncFormatter(decimal_formatter_mod))
 
     # Save figure (uncomment if needed)
-    plt.savefig(f"/lustre/saranath/Techcon24/AIMD/Sim2Experiment/results/single_tasks/reconstruction_graphs/Task{ind_to_val[task]}_Norm{scaler_flag}_{feature_extractor}_training{training_cycles}_lr{lr}_reconstruction.png")
+    plt.savefig(f"/lustre/saranath/Techcon24/AIMD/Sim2Experiment/results/single_tasks/reconstruction_graphs/Task{ind_to_val[task]}_Norm{scaler_flag}_{feature_extractor}_aug{augmentation}_training{training_cycles}_lr{lr}_reconstruction.png")
 
     plt.clf()
 
 def decimal_formatter(x, pos):
     """ Format ticks to 2 decimal places. """
-    return f'{x:.4f}'
+    return f'{x:.3f}'
 
-def color_gradient_difference_plot(energy_ground_truth, predictions, task, feature_extractor, scaler):
+def color_gradient_difference_plot(energy_ground_truth, predictions, training_pred, training_ground_truth, task, feature_extractor, scaler, augmentation):
     # Calculate the difference
-    difference = predictions - energy_ground_truth
+    pred_data =  np.concatenate((training_pred,predictions),axis=0)
+    ground_truth_data = np.concatenate((training_ground_truth,energy_ground_truth),axis=0)
+
+    difference = pred_data - ground_truth_data
+    #difference_training = training_pred - training_ground_truth
 
     # Create a scatter plot
     plt.figure(figsize=(12, 8))
 
     # Scatter plot
-    #scatter = plt.scatter(np.round(energy_ground_truth,6), np.round(predictions,6), c=difference, cmap='coolwarm', edgecolor='k', alpha=0.75)
-    scatter = plt.scatter(energy_ground_truth, predictions, c=difference, s=60, cmap='coolwarm', edgecolor='k', alpha=0.75)
+    # scatter = plt.scatter(np.round(energy_ground_truth,6), np.round(predictions,6), c=difference, cmap='coolwarm', edgecolor='k', alpha=0.75)
+    scatter = plt.scatter(ground_truth_data, pred_data, c=difference, s=60, cmap='coolwarm', edgecolor='k', alpha=0.75)
+
 
     # Add colorbar to show the gradient scale
     cbar = plt.colorbar(scatter)
@@ -541,12 +553,105 @@ def color_gradient_difference_plot(energy_ground_truth, predictions, task, featu
     # Add grid lines
     plt.grid(True, linestyle='--', alpha=0.7)
 
-    plt.savefig(f"/lustre/saranath/Techcon24/AIMD/Sim2Experiment/results/single_tasks/gradient_plot/Gradient_plot_Task{task}_{feature_extractor}_{scaler}scaling.png")
+    plt.savefig(f"/lustre/saranath/Techcon24/AIMD/Sim2Experiment/results/single_tasks/gradient_plot/Gradient_plot_Task{task}_{feature_extractor}_{scaler}_aug{augmentation}.png")
     plt.clf()
 
+def color_gradient_difference_plot_modified(energy_ground_truth, predictions, training_pred, training_ground_truth, task, feature_extractor, scaler, augmentation):
+    # Calculate the difference
+    pred_data = np.concatenate((training_pred, predictions), axis=0).reshape(-1, 1)
+    ground_truth_data = np.concatenate((training_ground_truth, energy_ground_truth), axis=0)
 
+    difference = pred_data - ground_truth_data
+    difference_training = training_pred - training_ground_truth
+    difference_predictions = predictions - energy_ground_truth
 
-def mod_plot_training_loss(training_loss, task, scaler_flag, feature_extractor, training_cycles, lr):
+    # Create subplots
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 14))
+ 
+    # Scatter plot for training data
+    scatter_train = ax1.scatter(training_ground_truth, training_pred, c=difference[:len(training_pred)]/1e-3, s=60, cmap='viridis', edgecolor='k', alpha=0.75, marker='D')
+    cbar_train = plt.colorbar(scatter_train, ax=ax1)
+    cbar_train.set_label('Training Error (meV)', fontsize=14, fontweight='bold')
+    cbar_train.ax.tick_params(labelsize=14, width=2)
+
+    ax1.set_xlabel("Computed energy difference per atom (meV)", fontsize=14, fontweight='bold')
+    ax1.set_ylabel("Predicted energy difference per atom (meV)", fontsize=14, fontweight='bold')
+    ax1.set_title("Training Prediction Error", fontsize=18, fontweight='bold')
+    ax1.xaxis.set_major_formatter(FuncFormatter(decimal_formatter_mod))
+    ax1.yaxis.set_major_formatter(FuncFormatter(decimal_formatter_mod))
+    ax1.grid(True, linestyle='--', alpha=0.7)
+    ax1.tick_params(axis='both', which='major', labelsize=14, width=2)
+
+    # Scatter plot for prediction data
+    scatter_pred = ax2.scatter(energy_ground_truth, predictions, c=difference[len(training_pred):]/1e-3, s=60, cmap='coolwarm', edgecolor='k', alpha=0.75, marker='^')
+    cbar_pred = plt.colorbar(scatter_pred, ax=ax2)
+    cbar_pred.set_label('Testing Error (meV)', fontsize=14, fontweight='bold')
+    cbar_pred.ax.tick_params(labelsize=14, width=2)
+
+    ax2.set_xlabel("Computed energy difference per atom (meV)", fontsize=14, fontweight='bold')
+    ax2.set_ylabel("Predicted energy difference per atom (meV)", fontsize=14, fontweight='bold')
+    ax2.set_title("Testing Prediction Error", fontsize=18, fontweight='bold')
+    ax2.xaxis.set_major_formatter(FuncFormatter(decimal_formatter_mod))
+    ax2.yaxis.set_major_formatter(FuncFormatter(decimal_formatter_mod))
+    ax2.grid(True, linestyle='--', alpha=0.7)
+    ax2.tick_params(axis='both', which='major', labelsize=14, width=2)
+
+    plt.suptitle(f"Energy Difference Gradient for Task {task}", fontsize=20, fontweight='bold')
+    plt.tight_layout(rect=[0, 0, 1, 0.96])
+
+    plt.savefig(f"/lustre/saranath/Techcon24/AIMD/Sim2Experiment/results/single_tasks/gradient_plot/Gradient_plot_Task{task}_{feature_extractor}_{pois}_aug{augmentation}.png")
+    plt.clf()
+import numpy as np
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib.ticker import FuncFormatter
+
+def color_gradient_difference_plot_3d(energy_ground_truth, predictions, training_pred, training_ground_truth, task, feature_extractor, scaler, augmentation):
+    # Calculate the difference
+    pred_data = np.concatenate((training_pred, predictions), axis=0).reshape(-1, 1)
+    ground_truth_data = np.concatenate((training_ground_truth, energy_ground_truth), axis=0)
+
+    difference = pred_data - ground_truth_data
+
+    # Create 3D plot
+    fig = plt.figure(figsize=(12, 10))
+    ax = fig.add_subplot(111, projection='3d')
+
+    # Scatter plot for training data
+    scatter_train = ax.scatter(training_ground_truth, training_pred, difference[:len(training_pred)]/1e-3, 
+                               c=difference[:len(training_pred)]/1e-3, cmap='viridis', edgecolor='k', alpha=0.75, marker='D')
+    
+    # Scatter plot for prediction data
+    scatter_pred = ax.scatter(energy_ground_truth, predictions, difference[len(training_pred):]/1e-3, 
+                              c=difference[len(training_pred):]/1e-3, cmap='coolwarm', edgecolor='k', alpha=0.75, marker='^')
+
+    # Adding color bar
+    cbar = plt.colorbar(scatter_train, ax=ax, shrink=0.5, aspect=5)
+    cbar.set_label('Error (meV)', fontsize=14, fontweight='bold')
+    cbar.ax.tick_params(labelsize=14, width=2)
+
+    # Set labels
+    ax.set_xlabel("Computed energy difference per atom (meV)", fontsize=14, fontweight='bold')
+    ax.set_ylabel("Predicted energy difference per atom (meV)", fontsize=14, fontweight='bold')
+    ax.set_zlabel("Error (meV)", fontsize=14, fontweight='bold')
+
+    ax.set_title(f"3D Error Gradient for Task {task}", fontsize=18, fontweight='bold')
+
+    ax.xaxis.set_major_formatter(FuncFormatter(decimal_formatter_mod))
+    ax.yaxis.set_major_formatter(FuncFormatter(decimal_formatter_mod))
+    ax.zaxis.set_major_formatter(FuncFormatter(decimal_formatter_mod))
+    
+    ax.tick_params(axis='both', which='major', labelsize=12, width=2)
+    ax.grid(True, linestyle='--', alpha=0.7)
+
+    plt.tight_layout()
+    plt.savefig(f"/lustre/saranath/Techcon24/AIMD/Sim2Experiment/results/single_tasks/gradient_plot/Gradient_plot_3D_Task{task}_{feature_extractor}_{scaler}_aug{augmentation}.png")
+    plt.show()
+
+# Example call (assuming you have the required data and function dependencies):
+# color_gradient_difference_plot_3d(energy_ground_truth, predictions, training_pred, training_ground_truth, task, feature_extractor, scaler, augmentation)
+
+def mod_plot_training_loss(training_loss, task, scaler_flag, feature_extractor, training_cycles, lr, augmentation):
     plt.figure(figsize=(12, 8))
 
     # Plot the training loss with enhancements
@@ -575,8 +680,32 @@ def mod_plot_training_loss(training_loss, task, scaler_flag, feature_extractor, 
     plt.axhline(y=0, color='red', linestyle='--', linewidth=1, label='Reference Line')
 
     # Optionally save the plot
-    plt.savefig(f"/lustre/saranath/Techcon24/AIMD/Sim2Experiment/results/single_tasks/training_loss/Training_loss_Task{task}_Norm{scaler_flag}_{feature_extractor}_training{training_cycles}_lr{lr}_.png")
+    plt.savefig(f"/lustre/saranath/Techcon24/AIMD/Sim2Experiment/results/single_tasks/training_loss/Training_loss_Task{task}_Norm{scaler_flag}_{feature_extractor}_aug{augmentation}_training{training_cycles}_lr{lr}_.png")
 
+    plt.clf()
+def plot_images_by_indices(images, indices, true_labels, iteration, task_id, exp_step, acquisition, cols=5):
+    """Plot images corresponding to the specified indices."""
+    num_images = len(images)
+    rows = num_images // cols + (1 if num_images % cols else 0)
+
+    fig, axs = plt.subplots(rows, cols, figsize=(cols * 5, 5))
+
+    for idx in range(num_images):
+      img_ax = plt.subplot(rows, cols, idx+1)
+      img_ax.imshow(images[idx][0].cpu().numpy())
+      img_ax.set_title(f"Iteration: {iteration[indices[idx]]}",fontsize=30)
+      img_ax.axis('off')
+
+    '''
+    scatter_ax = axs[cols-1]
+    scatter_ax.set_title('Energy at Optimal Iteration Plot - Active Learning Exploration')
+    scatter_ax.set_xlabel('Iteration')
+    scatter_ax.set_ylabel('Energy')
+    for index in indices:
+      scatter_ax.scatter(iteration[index], true_labels[index], color='red', s=100, marker=f"${int(iteration[index])}$")  # Increase marker size with `s`
+    '''
+    plt.tight_layout()
+    plt.savefig(f"/lustre/saranath/Techcon24/AIMD/Sim2Experiment/results/data_for_plot_generations/AL_selected_Simulated_images/task{task_id+1}/selected_exp{exp_step}_with_{acquisition}acq_trajectory.png")
     plt.clf()
 
 
@@ -588,6 +717,7 @@ def single_model_training_and_validation(train_tasks,ind_to_val,image_mask,energ
     scaler_flag = kwargs.get("scaler",False)
     results = {int(ind_to_val[task]):[] for task in train_tasks}
     feature_extractor = kwargs.get("reptile","default_FE")
+    augmentation = kwargs.get("augmentation",True)
     print(feature_extractor)
     model_sample = torch.nn.Sequential(
                                 torch.nn.Linear(datadim,2048),
@@ -601,6 +731,7 @@ def single_model_training_and_validation(train_tasks,ind_to_val,image_mask,energ
                                 *(list(fcFeatureExtractor(256,embedim).children())),)
 
     model_mod = kwargs.get("model_mod",model_sample)
+    
 
     for task in train_tasks:
         print(f"Training Task {ind_to_val[task]}")
@@ -638,14 +769,14 @@ def single_model_training_and_validation(train_tasks,ind_to_val,image_mask,energ
         clear_gpu_cache()
 
         # Reconstruction Graph
-        mod_reconstruction_graph_plot(iterations_train,train_mean,y_train,iterations_test,mean,y_test,ind_to_val,title,task,scaler_flag,feature_extractor,training_cycles,lr)
+        mod_reconstruction_graph_plot(iterations_train,train_mean,y_train,iterations_test,mean,y_test,ind_to_val,title,task,scaler_flag,feature_extractor,training_cycles,lr,augmentation)
 
         # Gradient Plotting
-        color_gradient_difference_plot(y_test.reshape(-1,1),mean.reshape(-1,1),ind_to_val[task],feature_extractor,scaler_flag)
+        #color_gradient_difference_plot(y_test.reshape(-1,1),mean.reshape(-1,1),ind_to_val[task],feature_extractor,scaler_flag,augmentation)
         #distribution_plotting(y_test.reshape(-1,1),mean.reshape(-1,1),ind_to_val[task],feature_extractor,scaler_flag)
-        
+        color_gradient_difference_plot_modified(y_test.reshape(-1,1), mean, train_mean, y_train.reshape(-1,1), task, feature_extractor, scaler_flag,augmentation)
         #Training Loss plotting
-        mod_plot_training_loss(training_loss,ind_to_val[task],scaler_flag,feature_extractor,training_cycles,lr)
+        mod_plot_training_loss(training_loss,ind_to_val[task],scaler_flag,feature_extractor,training_cycles,lr,augmentation)
 
         results[int(ind_to_val[task])] = [iterations_train,iterations_test,train_mean,mean,y_train,y_test,feature_extractor,training_loss,scaler_flag,ind_to_val,title,training_cycles,lr]
     return results
@@ -679,19 +810,22 @@ def select_most_stable_energy_samples(model, unlabeled_features, reference_energ
     
     # # Filter out samples with errors greater than the threshold
     
-    valid_indices = torch.where(percentage_errors < error_threshold)[1]  
+    valid_indices = torch.where(percentage_errors < percentage_errors.mean())[1]  
     
     # if len(valid_indices) < num_samples:
     #     raise ValueError(f"Not enough samples with error within {error_threshold * 100}% of the reference energy.")
-    
     # Select the indices of the `num_samples` most stable energy predictions
-    _, most_stable_indices = torch.topk(-percentage_errors[:,valid_indices], num_samples)
+    #_, most_stable_indices = torch.topk(-percentage_errors[:,valid_indices], num_samples)
     
+    sorted_tensor =  torch.argsort(-percentage_errors[:,valid_indices],dim=1)[0]
+
+    most_stable_indices = sorted_tensor[-num_samples:]
     # Map back to original indices
     # most_stable_indices = valid_indices[most_stable_indices]
-    print(most_stable_indices[0])
     
-    return most_stable_indices[0]
+    #result = torch.tensor(most_stable_indices.item(),dtype=torch.int8)
+    
+    return most_stable_indices
 
 # Simulate querying labels for the most uncertain samples
 def query_labels(indices):
