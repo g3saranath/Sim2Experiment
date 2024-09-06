@@ -1,4 +1,5 @@
 import os
+
 from AtomicImageSimulator.main import *
 import pandas as pd
 import numpy as np
@@ -276,7 +277,7 @@ def oszicar_generation_additional(file_path,xdatcar_path,oszicar_path,exp_num,la
     df["target_energy"] = df["Energy"] - df["Reference_Energy"]
     # Save the DataFrame
     
-    df.to_csv(f"/lustre/saranath/Techcon24/AIMD/Sim2Experiment/processed_mds/energy_{exp_num}_data_additional.csv")
+    df.to_csv(f"processed_mds/energy_{exp_num}_data_additional.csv")
     return df
 
 def oszicar_generation(file_path,xdatcar_path,oszicar_path,exp_num):
@@ -370,7 +371,7 @@ def oszicar_generation(file_path,xdatcar_path,oszicar_path,exp_num):
     df["target_energy"] = df["Energy"] - df["Reference_Energy"]
     # Save the DataFrame
     
-    df.to_csv(f"/lustre/saranath/Techcon24/AIMD/Sim2Experiment/processed_mds/energy_{exp_num}_data.csv")
+    df.to_csv(f"processed_mds/energy_{exp_num}_data.csv")
     return df
 
 def randomize_train_and_test_task(n_tasks):
@@ -429,7 +430,7 @@ def distribution_plotting(energy_ground_truth, predictions, task, feature_extrac
     ax = plt.gca()
     ax.xaxis.set_major_formatter(FormatStrFormatter('%.4f'))
 
-    plt.savefig(f"/lustre/saranath/Techcon24/AIMD/Sim2Experiment/results/single_tasks/reconstruction_graphs/Distribution_Task{task}_graph_{feature_extractor}_{scaler}scaling.png")
+    plt.savefig(f"results/single_tasks/reconstruction_graphs/Distribution_Task{task}_graph_{feature_extractor}_{scaler}scaling.png")
     plt.clf()
 
 def reconstruction_graph_plot(iterations_train,train_mean,y_train,iterations_test,mean,y_test,ind_to_val,title,task,scaler_flag,feature_extractor,training_cycles,lr):
@@ -442,7 +443,7 @@ def reconstruction_graph_plot(iterations_train,train_mean,y_train,iterations_tes
     plt.xlabel("Iterations")
     plt.ylabel("Target Energy")
     plt.legend(fontsize=10)
-    plt.savefig(f"/lustre/saranath/Techcon24/AIMD/Sim2Experiment/results/single_tasks/reconstruction_graphs/Task{ind_to_val[task]}_Norm{scaler_flag}_{feature_extractor}_training{training_cycles}_lr{lr}_reconstruction.png")
+    plt.savefig(f"results/single_tasks/reconstruction_graphs/Task{ind_to_val[task]}_Norm{scaler_flag}_{feature_extractor}_training{training_cycles}_lr{lr}_reconstruction.png")
     plt.clf()
 
 def plot_training_loss(training_loss,task,scaler_flag,feature_extractor,training_cycles,lr):
@@ -451,7 +452,7 @@ def plot_training_loss(training_loss,task,scaler_flag,feature_extractor,training
     plt.xlabel("Training Cycles")
     plt.ylabel("Loss Optimization - MSE+MLL")
     plt.xticks(range(0,len(training_loss)))
-    plt.savefig(f"/lustre/saranath/Techcon24/AIMD/Sim2Experiment/results/single_tasks/training_loss/Training_loss_Task{task}_Norm{scaler_flag}_{feature_extractor}_training{training_cycles}_lr{lr}_.png")
+    plt.savefig(f"results/single_tasks/training_loss/Training_loss_Task{task}_Norm{scaler_flag}_{feature_extractor}_training{training_cycles}_lr{lr}_.png")
     plt.clf()
 
 
@@ -509,7 +510,7 @@ def mod_reconstruction_graph_plot(
     plt.gca().yaxis.set_major_formatter(FuncFormatter(decimal_formatter_mod))
 
     # Save figure (uncomment if needed)
-    plt.savefig(f"/lustre/saranath/Techcon24/AIMD/Sim2Experiment/results/single_tasks/reconstruction_graphs/Task{ind_to_val[task]}_Norm{scaler_flag}_{feature_extractor}_aug{augmentation}_training{training_cycles}_lr{lr}_reconstruction.png")
+    plt.savefig(f"results/single_tasks/reconstruction_graphs/Task{ind_to_val[task]}_Norm{scaler_flag}_{feature_extractor}_aug{augmentation}_training{training_cycles}_lr{lr}_reconstruction.png")
 
     plt.clf()
 
@@ -553,7 +554,7 @@ def color_gradient_difference_plot(energy_ground_truth, predictions, training_pr
     # Add grid lines
     plt.grid(True, linestyle='--', alpha=0.7)
 
-    plt.savefig(f"/lustre/saranath/Techcon24/AIMD/Sim2Experiment/results/single_tasks/gradient_plot/Gradient_plot_Task{task}_{feature_extractor}_{scaler}_aug{augmentation}.png")
+    plt.savefig(f"results/single_tasks/gradient_plot/Gradient_plot_Task{task}_{feature_extractor}_{scaler}_aug{augmentation}.png")
     plt.clf()
 
 def color_gradient_difference_plot_modified(energy_ground_truth, predictions, training_pred, training_ground_truth, task, feature_extractor, scaler, augmentation):
@@ -599,7 +600,7 @@ def color_gradient_difference_plot_modified(energy_ground_truth, predictions, tr
     plt.suptitle(f"Energy Difference Gradient for Task {task}", fontsize=20, fontweight='bold')
     plt.tight_layout(rect=[0, 0, 1, 0.96])
 
-    plt.savefig(f"/lustre/saranath/Techcon24/AIMD/Sim2Experiment/results/single_tasks/gradient_plot/Gradient_plot_Task{task}_{feature_extractor}_{pois}_aug{augmentation}.png")
+    plt.savefig(f"results/single_tasks/gradient_plot/Gradient_plot_Task{task}_{feature_extractor}_{pois}_aug{augmentation}.png")
     plt.clf()
 import numpy as np
 import matplotlib.pyplot as plt
@@ -645,7 +646,7 @@ def color_gradient_difference_plot_3d(energy_ground_truth, predictions, training
     ax.grid(True, linestyle='--', alpha=0.7)
 
     plt.tight_layout()
-    plt.savefig(f"/lustre/saranath/Techcon24/AIMD/Sim2Experiment/results/single_tasks/gradient_plot/Gradient_plot_3D_Task{task}_{feature_extractor}_{scaler}_aug{augmentation}.png")
+    plt.savefig(f"results/single_tasks/gradient_plot/Gradient_plot_3D_Task{task}_{feature_extractor}_{scaler}_aug{augmentation}.png")
     plt.show()
 
 # Example call (assuming you have the required data and function dependencies):
@@ -680,7 +681,7 @@ def mod_plot_training_loss(training_loss, task, scaler_flag, feature_extractor, 
     plt.axhline(y=0, color='red', linestyle='--', linewidth=1, label='Reference Line')
 
     # Optionally save the plot
-    plt.savefig(f"/lustre/saranath/Techcon24/AIMD/Sim2Experiment/results/single_tasks/training_loss/Training_loss_Task{task}_Norm{scaler_flag}_{feature_extractor}_aug{augmentation}_training{training_cycles}_lr{lr}_.png")
+    plt.savefig(f"results/single_tasks/training_loss/Training_loss_Task{task}_Norm{scaler_flag}_{feature_extractor}_aug{augmentation}_training{training_cycles}_lr{lr}_.png")
 
     plt.clf()
 def plot_images_by_indices(images, indices, true_labels, iteration, task_id, exp_step, acquisition, cols=5):
@@ -705,7 +706,7 @@ def plot_images_by_indices(images, indices, true_labels, iteration, task_id, exp
       scatter_ax.scatter(iteration[index], true_labels[index], color='red', s=100, marker=f"${int(iteration[index])}$")  # Increase marker size with `s`
     '''
     plt.tight_layout()
-    plt.savefig(f"/lustre/saranath/Techcon24/AIMD/Sim2Experiment/results/data_for_plot_generations/AL_selected_Simulated_images/task{task_id+1}/selected_exp{exp_step}_with_{acquisition}acq_trajectory.png")
+    plt.savefig(f"results/data_for_plot_generations/AL_selected_Simulated_images/task{task_id+1}/selected_exp{exp_step}_with_{acquisition}acq_trajectory.png")
     plt.clf()
 
 
@@ -765,7 +766,7 @@ def single_model_training_and_validation(train_tasks,ind_to_val,image_mask,energ
             train_mean, train_var = dklgp.predict(X)
             mean, var = dklgp.predict(X_test)
         
-        torch.save(dklgp,f"/lustre/saranath/Techcon24/AIMD/Sim2Experiment/results/single_tasks/model/Task{ind_to_val[task]}_Norm{scaler_flag}_{feature_extractor}_training{training_cycles}_lr{lr}_model.pt")
+        torch.save(dklgp,f"results/single_tasks/model/Task{ind_to_val[task]}_Norm{scaler_flag}_{feature_extractor}_training{training_cycles}_lr{lr}_model.pt")
         clear_gpu_cache()
 
         # Reconstruction Graph
@@ -858,7 +859,7 @@ def plot_images_by_indices(images, indices, true_labels, iteration, task_id, exp
       scatter_ax.scatter(iteration[index], true_labels[index], color='red', s=100, marker=f"${int(iteration[index])}$")  # Increase marker size with `s`
     '''
     plt.tight_layout()
-    plt.savefig(f"/lustre/saranath/Techcon24/AIMD/Sim2Experiment/results/single_tasks/active_learning/task{task_id+1}/selected_exp{exp_step}_with_{acquisition}acq_trajectory.png")
+    plt.savefig(f"results/single_tasks/active_learning/task{task_id+1}/selected_exp{exp_step}_with_{acquisition}acq_trajectory.png")
     plt.clf()
 
 def plot_selected_points(iterations_test,test_y,selected_iter,selected_energy,acquisition,task,num_iterations):
@@ -872,7 +873,7 @@ def plot_selected_points(iterations_test,test_y,selected_iter,selected_energy,ac
     plt.ylabel("Energy (eV)")
     plt.tight_layout()
     plt.legend(fontsize=10)
-    plt.savefig(f"/lustre/saranath/Techcon24/AIMD/Sim2Experiment/results/single_tasks/active_learning/task{task+1}/final_actively_selected_{num_iterations}_points_with_{acquisition}_acq.png")
+    plt.savefig(f"results/single_tasks/active_learning/task{task+1}/final_actively_selected_{num_iterations}_points_with_{acquisition}_acq.png")
     plt.clf()
 
 # @title modified graph utility functions for AL plots
@@ -933,7 +934,7 @@ def mod_plot_selected_points(iterations_test, test_y, selected_iter, selected_en
     plt.tight_layout()
 
     # Optionally save the plot
-    plt.savefig(f"/lustre/saranath/Techcon24/AIMD/Sim2Experiment/results/single_tasks/active_learning/task{task+1}/final_actively_selected_{num_iterations}_points_with_{acquisition}_acq.png")
+    plt.savefig(f"results/single_tasks/active_learning/task{task+1}/final_actively_selected_{num_iterations}_points_with_{acquisition}_acq.png")
     plt.clf()
 
 def mod_plot_al_training_loss(training_loss, task, num_iterations, acquisition):
@@ -988,7 +989,7 @@ def mod_plot_al_training_loss(training_loss, task, num_iterations, acquisition):
 
     # Optionally save the plot
     # plt.savefig(f"result/active_learning/{acquisition}/Training_loss_task{task+1}.png")
-    plt.savefig(f"/lustre/saranath/Techcon24/AIMD/Sim2Experiment/results/single_tasks/active_learning/task{task+1}/Training_loss_{acquisition}_acq.png")
+    plt.savefig(f"results/single_tasks/active_learning/task{task+1}/Training_loss_{acquisition}_acq.png")
     plt.tight_layout()
     
     plt.clf()
@@ -1088,7 +1089,7 @@ def active_learning_single_tasks(task,image_mask,energy_to_ind,exploration_steps
 
         print(f"New data shape: {train_x.shape}")
         print(f"New data label: {train_y.shape}")
-        torch.save(dklgp,f"/lustre/saranath/Techcon24/AIMD/Sim2Experiment/results/single_tasks/active_learning/task{task+1}/AL_exp{iteration}_with_{acquisition}_acq_model.pt")
+        torch.save(dklgp,f"results/single_tasks/active_learning/task{task+1}/AL_exp{iteration}_with_{acquisition}_acq_model.pt")
     
     #plot_selected_points(iterations_test,test_y,selected_iter,selected_energy,acquisition,task,num_iterations)
     mod_plot_selected_points(iterations_test, test_y, selected_iter, selected_energy, acquisition, task, num_iterations)

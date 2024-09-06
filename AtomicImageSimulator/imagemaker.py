@@ -10,7 +10,7 @@ import numpy as np
 import scipy.spatial as spatial
 from scipy import ndimage
 import itertools
-from elements import ELEMENTS
+from AtomicImageSimulator.elements import ELEMENTS
 
 def znumber(atomstr):
     '''Returns a dictionary value of Z
