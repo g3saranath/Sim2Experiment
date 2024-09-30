@@ -186,6 +186,169 @@ def xdatcar_processor(directory,n_sims):
 
     return ind_to_val,image_list,mask_list,label_list
 
+def xdatcar_processor(directory,n_sims):
+
+    ind_to_val = {val:None for val in range(n_sims)}
+    val = 0
+    image_list = []
+    mask_list = []
+    label_list = []
+
+    for filename in os.listdir(directory):
+        if "." in filename:
+            continue
+        ind_to_val[val] = filename.split('_')[1]
+        val += 1
+        print(ind_to_val)
+        
+        f = os.path.join(directory+filename, f"XDATCAR_df_S_{filename.split('_')[1]}")
+        
+        f_ck = open(f)
+        f_ = f_ck.readlines()
+        label_name = f.split('/')[-1]
+        f_s = []
+        for l in f_:
+            f_s.append(l.strip("\n").strip().split())
+        f_ck.close()
+        
+
+        #extracting coordinates from each AIMD trajectory
+        traj, v, label_name, cell, num_Mo, num_S = extract_coordinates(f_s,label_name)
+        #print(label_name)
+        #img-mask pair for each trajectory
+        local_img_list=[]
+        local_mask_list=[]
+        for k in range(len(traj)):
+            traj_img, traj_mask = generate_img_mask_pair(v, k, cell, num_Mo, num_S, label_name,f_s)
+            local_img_list.append(traj_img)
+            local_mask_list.append(traj_mask)
+            #print(k)
+            #print(traj_img.shape, traj_mask.shape)
+        # image_list.append(local_img_list)
+        # mask_list.append(local_mask_list)
+        # label_list.append(label_name)
+
+        f = os.path.join(directory+filename, f"XDATCAR_df_S_{filename.split('_')[1]}_1")
+        f_ck = open(f)
+        f_ = f_ck.readlines()
+        label_name = f.split('/')[-1]
+        f_s = []
+        for l in f_:
+            f_s.append(l.strip("\n").strip().split())
+        f_ck.close()
+
+        local_img_list_2 = []
+        local_mask_list_2 = []
+        #extracting coordinates from each AIMD trajectory
+        traj, v, label_name2, cell, num_Mo, num_S = extract_coordinates(f_s,label_name)
+        #print(label_name)
+        #img-mask pair for each trajectory
+        for k in range(len(traj)):
+            traj_img, traj_mask = generate_img_mask_pair(v, k, cell, num_Mo, num_S, label_name,f_s)
+            local_img_list_2.append(traj_img)
+            local_mask_list_2.append(traj_mask)
+            #print(k)
+            #print(traj_img.shape, traj_mask.shape)
+    
+        image_list.append(local_img_list+local_img_list_2)
+        mask_list.append(local_mask_list+local_mask_list_2)
+        label_list.append(label_name+label_name2)
+
+    return ind_to_val,image_list,mask_list,label_list
+
+def oszicar_generation_additional(file_path,xdatcar_path,oszicar_path,exp_num,last_iter):
+
+    Energy_ref = -765.3104674489797
+
+    last_traj = None
+    total_atoms = None
+
+    # File path to the XDATCAR file
+    xdatcar_filepath = file_path + xdatcar_path
+    oszicar_filepath = file_path + oszicar_path
+
+
+    # Read the file
+    with open(xdatcar_filepath, 'r') as file:
+        lines = file.readlines()
+    
+
+    atoms_line = lines[6].strip()
+    atom_counts = [int(count) for count in atoms_line.split() if count.isdigit()]
+    total_atoms = sum(atom_counts)
+    print("Total number of atoms:", total_atoms)
+
+    # Iterate through lines in reverse order to find the last occurrence of 'Direct configuration='
+    for line in reversed(lines):
+        if 'Direct configuration=' in line:
+            last_traj = line.split('=')[-1].strip()
+            break  # Stop after finding the last occurrence
+
+    # Print the results
+    if last_traj is not None:
+        direct_configuration_number = float(last_traj)  # Convert to float or int as needed
+        print("Last trajectory Number:", direct_configuration_number)
+    else:
+        print("No line with 'Direct configuration=' found in the file.")
+
+    # Convert last_traj to an integer
+    last_traj = int(last_traj)
+
+    # Initialize empty lists to store 'E' and 'T' values
+    energy_values = []
+    temperature_values = []
+
+    # Read the OSZICAR file
+    # with open(oszicar_filepath, 'r') as file:
+    #     lines = file.readlines()
+
+    # # Loop through each line to find and extract 'E' and 'T' values
+    # for line in lines:
+    #     if 'E=' in line:
+    #         energy = float(line.split('E=')[1].split()[0])
+    #         energy_values.append(energy)
+    #     if 'T=' in line:
+    #         temperature = float(line.split('T=')[1].split()[0])
+    #         temperature_values.append(temperature)
+    
+    with open(oszicar_filepath+"_1", 'r') as file:
+        lines = file.readlines()
+
+    # Loop through each line to find and extract 'E' and 'T' values
+    for line in lines:
+        if 'E=' in line:
+            energy = float(line.split('E=')[1].split()[0])
+            energy_values.append(energy)
+        if 'T=' in line:
+            temperature = float(line.split('T=')[1].split()[0])
+            temperature_values.append(temperature)
+    
+
+    # Extract every 10th value up to the 1960th iteration
+    iteration_numbers = list(range(1, min(last_traj + 1, len(energy_values)), 10))
+
+    # Truncate 'Energy' and 'Temperature' values to match the length of the iteration numbers
+    energy_values = energy_values[:len(iteration_numbers)]
+    temperature_values = temperature_values[:len(iteration_numbers)]
+
+    # Create a DataFrame with 'Energy', 'Temperature', and iteration number
+    data = {
+        'Iteration': iteration_numbers,
+        'Energy': energy_values,
+        'Temperature': temperature_values
+    }
+    df = pd.DataFrame(data)
+
+    df['Reference_Energy'] = Energy_ref
+    df['Reference_Energy_per_atom'] = df['Reference_Energy'] / 108
+    df['Energy_per_atom'] = df['Energy'] / total_atoms
+    df['target_total_energy'] = df['Energy'] - df['Reference_Energy']
+    df['target_total_energy_per_atom'] = df['Energy_per_atom'] - df['Reference_Energy_per_atom']
+    df["target_energy"] = df["Energy"] - df["Reference_Energy"]
+    # Save the DataFrame
+    
+    # df.to_csv(f"/lustre/saranath/Techcon24/AIMD/Sim2Experiment/processed_mds/energy_{exp_num}_data_additional.csv")
+    return df
 def oszicar_generation_additional(file_path,xdatcar_path,oszicar_path,exp_num,last_iter):
 
     Energy_ref = -765.3104674489797
